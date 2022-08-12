@@ -143,6 +143,7 @@ class main:
                                 location_list[2][0],location_list[2][1],
                                 location_list[3][0],location_list[3][1],
                                 location_list[0][0],location_list[0][1],tags="black_line")
+        self.master.lift("point_img")
     def marker_format(self,marker_pin) -> None:
         """
         4点を描写する
