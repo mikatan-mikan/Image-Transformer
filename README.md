@@ -14,7 +14,7 @@ JPG , PNG , PDF
 
 # ライセンス
 
-Copyright © 2020 mikatan-mikan. All Rights Reserved.
+Copyright © 2020 mikatan-mikan.
 
 This Software is HPND Lisence
 
