@@ -16,7 +16,7 @@ except:
     import cv2
 
 class take_camera:
-    def camera_change(self):
+    def camera_change(self) -> None:
         self.camera_num += 1
         self.camera_capture = cv2.VideoCapture(self.camera_num)
         if not self.camera_capture.isOpened():
@@ -28,7 +28,7 @@ class take_camera:
                 if not self.camera_capture.isOpened():
                     messagebox.showerror(title="エラー",message="カメラを認識できません")
                     self.camera_root.destroy()
-    def camera_bef(self):
+    def camera_bef(self) -> None:
         self.camera_num = 0
         self.camera_var = IntVar()
         self.camera_var.set(0)
@@ -47,7 +47,7 @@ class take_camera:
                 return
         self.camera()
         self.camera_master.delete("delete_flag")
-    def camera(self):
+    def camera(self) -> None:
         ret,frame = self.camera_capture.read()
         if self.camera_var.get() == 0:
             self.camera_cv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -80,14 +80,14 @@ class take_camera:
 
         # disp_image()を10msec後に実行する
         self.camera_master.after(50, self.camera)
-    def camera_click(self,event:Event):
+    def camera_click(self,event:Event) -> None:
         if event.x < self.camera_win_size[1] - 100:
             self.camera_save = self.camera_pil_image
             self.camera_root.destroy()
             self.put_pic_marker("",True)
-    def camera_bind(self):
+    def camera_bind(self) -> None:
         self.camera_master.bind("<Button-1>",self.camera_click)
-    def camera_win(self):
+    def camera_win(self) -> None:
         self.camera_root = Toplevel()
         self.camera_win_size = [self.camera_root.winfo_screenwidth(),self.camera_root.winfo_screenheight()]
         self.camera_root.geometry(f"{self.camera_win_size[0]}x{self.camera_win_size[1]}")
@@ -102,7 +102,7 @@ class take_camera:
 
 
 class change_point:
-    def return_score(self):
+    def return_score(self) -> None:
         for i in range(len(self.point_entry_list)):
             if int(self.sub_point_entry[i][0].get()) < 0 or int(self.sub_point_entry[i][1].get()) < 0 or int(self.sub_point_entry[i][0].get()) > self.picture_window_size[0] or int(self.sub_point_entry[i][1].get()) > self.picture_window_size[1]:
                 messagebox.showerror(title="エラー",message="数値が画像の範囲外です")
@@ -115,12 +115,12 @@ class change_point:
                 self.point_entry_list[i][j]["state"] = "readonly"
             self.master.moveto(f"{i + 1}_mark",int(self.point_entry_list[i][0].get()) + 250 - 3,int(self.point_entry_list[i][1].get()) + 100 - 3)
             self.marker_line()
-    def sub_put_score(self):
+    def sub_put_score(self) -> None:
         for i in range(len(self.sub_point_entry_in)):
             for j in range(len(self.sub_point_entry_in[i])):
                 self.sub_point_entry[i][j]["state"] = "NORMAL"
                 self.sub_point_entry[i][j].insert(0,self.sub_point_entry_in[i][j].get())
-    def sub_put_obj(self):
+    def sub_put_obj(self) -> None:
         #背景を作る
         self.sub_dire = ["左上","左下","右下","右上"]
         self.sub_back_image = Image.new("RGBA",(200,200),(64,64,64,255))
@@ -142,7 +142,7 @@ class change_point:
     def sub_win_bef(self,point_entry : List[List[ttk.Entry]]):
         self.sub_point_entry_in = point_entry
         return self.sub_win
-    def sub_win(self):
+    def sub_win(self) -> None:
         self.sub_root = Toplevel()
         self.sub_root.geometry("200x200")
         self.sub_root.resizable(0,0)
@@ -217,7 +217,7 @@ class main(change_point,take_camera):
             messagebox.showinfo(title="保存",message=f"保存に成功しました\n保存先：{file_name}")
         except:
             messagebox.showerror(title="エラー",message="保存に失敗しました")
-    def click(self,event) -> None:
+    def click(self,event : Event) -> None:
         """
         クリックのみの判定
         これを使用し、前回のものをつかんだままなのかを判定する。
@@ -322,7 +322,7 @@ class main(change_point,take_camera):
         self.line_out_tk = ImageTk.PhotoImage(self.line_out_img)
         self.master.create_image(250,100,image = self.line_out_tk,anchor = NW,tags = "black_line")
         self.master.lift("point_img")
-    def marker_format(self,marker_pin) -> None:
+    def marker_format(self,marker_pin : List[List[int]]) -> None:
         """
         4点を描写する
         """
