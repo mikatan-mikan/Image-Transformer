@@ -220,7 +220,7 @@ class main(change_point,take_camera):
             save_pic = self.affine(show_img=False)
             file_name = filedialog.asksaveasfilename(
                         title = "名前を付けて保存",
-                        filetypes= [("PNG", ".png"), ("JPEG", ".jpg"), ("PDF",".pdf")],
+                        filetypes= [("PNG", ".png"), ("JPEG", ".jpg"), ("PDF",".pdf"), ("WEBP",".webp"),("ICON",".ico")],
                         initialdir="./",
                         defaultextension = "png"
             )
@@ -461,7 +461,7 @@ class main(change_point,take_camera):
             """
             ファイル参照処理
             """
-            path = filedialog.askopenfilename(filetypes=[("PNG", ".png"), ("JPEG", ".jpg"), ("PDF",".pdf")])
+            path = filedialog.askopenfilename(filetypes=[("Image", "*.png;*.jpg;*.webp;*.ico")])
             if path == "":
                 pass
             else:
