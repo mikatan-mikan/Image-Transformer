@@ -1,3 +1,4 @@
+from threading import Thread
 from tkinter import CENTER, N, NW, Canvas, Event, IntVar, Tk,PhotoImage, Toplevel, filedialog, ttk, messagebox
 from typing import List
 try:
@@ -17,6 +18,9 @@ except:
 
 class take_camera:
     def camera_change(self) -> None:
+        self.camera_change_flag = True
+        self.camera_master.delete("now_image")
+        self.camera_master.create_text(self.camera_win_size[0] / 2,self.camera_win_size[1] / 2, text="Loading Camera...",fill="black",font=("",20),tags="delete_flag")
         self.camera_num += 1
         self.camera_capture = cv2.VideoCapture(self.camera_num)
         if not self.camera_capture.isOpened():
@@ -28,6 +32,8 @@ class take_camera:
                 if not self.camera_capture.isOpened():
                     messagebox.showerror(title="エラー",message="カメラを認識できません")
                     self.camera_root.destroy()
+                    return
+        self.camera_change_flag = False
     def camera_bef(self) -> None:
         self.camera_num = 0
         self.camera_var = IntVar()
@@ -35,7 +41,8 @@ class take_camera:
         ttk.Radiobutton(self.camera_master, value=0, variable=self.camera_var, text='カラー').place(x=10, y=self.camera_win_size[1] - 100)
         ttk.Radiobutton(self.camera_master, value=1, variable=self.camera_var, text='グレースケール').place(x=80, y=self.camera_win_size[1] - 100)
         self.camera_master.create_text(200,self.camera_win_size[1] - 100 + 3,text="カメラ映像をクリックで撮影",anchor=NW)
-        self.camera_change_button = ttk.Button(self.camera_master,text="カメラを変更",command = self.camera_change)
+        self.camera_thread = Thread(target=self.camera_change)
+        self.camera_change_button = ttk.Button(self.camera_master,text="カメラを変更",command = self.camera_thread.start)
         self.camera_change_button.place(x = 350,y = self.camera_win_size[1] - 100)
         self.camera_capture = cv2.VideoCapture(self.camera_num)
         if not self.camera_capture.isOpened():
@@ -45,9 +52,15 @@ class take_camera:
                 messagebox.showerror(title="エラー",message="カメラを認識できません")
                 self.camera_root.destroy()
                 return
+        self.camera_change_flag = False
         self.camera()
         self.camera_master.delete("delete_flag")
     def camera(self) -> None:
+        if self.camera_change_flag:
+            self.camera_master.after(50, self.camera)
+            return
+        self.camera_master.delete("delete_flag")
+
         ret,frame = self.camera_capture.read()
         if self.camera_var.get() == 0:
             self.camera_cv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -75,7 +88,8 @@ class take_camera:
         self.camera_master.create_image(
                 canvas_width / 2,       # 画像表示位置(Canvasの中心)
                 canvas_height / 2,                   
-                image=self.photo_image  # 表示画像データ
+                image=self.photo_image,  # 表示画像データ
+                tags = "now_image"
                 )
 
         # disp_image()を10msec後に実行する
