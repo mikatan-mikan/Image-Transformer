@@ -18,6 +18,7 @@ except:
 
 class take_camera:
     def camera_change(self) -> None:
+        self.camera_master.unbind("<Button-1>",self.camera_button_id)
         self.camera_change_flag = True
         self.camera_master.delete("now_image")
         self.camera_master.create_text(self.camera_win_size[0] / 2,self.camera_win_size[1] / 2, text="Loading Camera...",fill="black",font=("",20),tags="delete_flag")
@@ -60,30 +61,23 @@ class take_camera:
             self.camera_master.after(50, self.camera)
             return
         self.camera_master.delete("delete_flag")
-
         ret,frame = self.camera_capture.read()
         if self.camera_var.get() == 0:
             self.camera_cv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         elif self.camera_var.get() == 1:
             self.camera_cv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-        # NumPyのndarrayからPillowのImageへ変換
+        # NumPyのndarrayからPillowのImageに変換
         self.camera_pil_image = Image.fromarray(self.camera_cv_image)
         self.camera_pil_image.putalpha(255)
-
         # キャンバスのサイズを取得
         canvas_width = self.camera_win_size[0]
         canvas_height = self.camera_win_size[1] - 100
-
         # 画像のアスペクト比（縦横比）を崩さずに指定したサイズ（キャンバスのサイズ）全体に画像をリサイズする
         if self.camera_var.get() == 0:
             self.camera_pil_image_win = ImageOps.pad(self.camera_pil_image, (canvas_width, canvas_height),color=(255,255,255,0))
         elif self.camera_var.get() == 1:
             self.camera_pil_image_win = ImageOps.pad(self.camera_pil_image, (canvas_width, canvas_height),color=(255))
-        # self.camera_pil_image.show()
-        # PIL.ImageからPhotoImageへ変換する
         self.photo_image = ImageTk.PhotoImage(image=self.camera_pil_image_win)
-
         # 画像の描画
         self.camera_master.create_image(
                 canvas_width / 2,       # 画像表示位置(Canvasの中心)
@@ -91,16 +85,17 @@ class take_camera:
                 image=self.photo_image,  # 表示画像データ
                 tags = "now_image"
                 )
-
-        # disp_image()を10msec後に実行する
+        try:
+            self.camera_bind()
+        except:pass
         self.camera_master.after(50, self.camera)
     def camera_click(self,event:Event) -> None:
-        if event.x < self.camera_win_size[1] - 100:
+        if event.y < self.camera_win_size[1] - 100:
             self.camera_save = self.camera_pil_image
             self.camera_root.destroy()
             self.put_pic_marker("",True)
     def camera_bind(self) -> None:
-        self.camera_master.bind("<Button-1>",self.camera_click)
+        self.camera_button_id = self.camera_master.bind("<Button-1>",self.camera_click)
     def camera_win(self) -> None:
         self.camera_root = Toplevel()
         self.camera_win_size = [self.camera_root.winfo_screenwidth(),self.camera_root.winfo_screenheight()]
@@ -109,7 +104,6 @@ class take_camera:
         self.camera_root.title("写真")
         self.camera_master = Canvas(self.camera_root,width=self.camera_win_size[0],height=self.camera_win_size[1])
         self.camera_master.pack()
-        self.camera_bind()
         self.camera_master.create_text(self.camera_win_size[0] / 2,self.camera_win_size[1] / 2, text="Loading Camera...",fill="black",font=("",20),tags="delete_flag")
         self.camera_master.after(100,self.camera_bef)
         self.camera_master.mainloop()
@@ -347,7 +341,9 @@ class main(change_point,take_camera):
             self.master.create_image(location[0],location[1],image = self.marker,tags = (f"{location[2]}_mark","point_img"))
             self.point_entry_list[i][0]["state"] = "NORMAL"
             self.point_entry_list[i][1]["state"] = "NORMAL"
+            self.point_entry_list[i][0].delete(0,len(self.point_entry_list[i][0].get()))
             self.point_entry_list[i][0].insert(0,str(location[0] - 250))
+            self.point_entry_list[i][1].delete(0,len(self.point_entry_list[i][1].get()))
             self.point_entry_list[i][1].insert(0,str(location[1] - 100))
             self.point_entry_list[i][0]["state"] = "readonly"
             self.point_entry_list[i][1]["state"] = "readonly"
