@@ -123,6 +123,9 @@ class change_point:
                 self.point_entry_list[i][j]["state"] = "readonly"
             self.master.moveto(f"{i + 1}_mark",int(self.point_entry_list[i][0].get()) + 250 - 3,int(self.point_entry_list[i][1].get()) + 100 - 3)
             self.marker_line()
+        self.sub_root.destroy()
+        del self.sub_root
+        return
     def sub_put_score(self) -> None:
         for i in range(len(self.sub_point_entry_in)):
             for j in range(len(self.sub_point_entry_in[i])):
@@ -371,7 +374,9 @@ class main(change_point,take_camera):
         self.save_size_x_entry.insert(0,self.now_picture.size[0])
         self.save_size_y_entry.delete(0,len(self.save_size_y_entry.get()))
         self.save_size_y_entry.insert(0,self.now_picture.size[1])
-        self.change_point_button["state"] = "enable"
+        try:
+            self.change_point_button["state"] = "enable"
+        except:pass
         #ウィンドウ用の画像生成
         if self.picture_default_size[0] * 4 <= self.picture_default_size[1] * 5:
             #ここでは対比に対して縦が大きいので縦に合わせて横のサイズを変更したい(x = ? , y = 500 * (7/9))
