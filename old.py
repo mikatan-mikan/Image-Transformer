@@ -115,7 +115,7 @@ class take_camera:
 class change_point:
     def return_score(self) -> None:
         for i in range(len(self.point_entry_list)):
-            if int(self.sub_point_entry[i][0].get()) < 0 or int(self.sub_point_entry[i][1].get()) < 0 or int(self.sub_point_entry[i][0].get()) > self.picture_window_size[0] * (1/self.float_scale) or int(self.sub_point_entry[i][1].get()) > self.picture_window_size[1] * (1/self.float_scale) :
+            if int(self.sub_point_entry[i][0].get()) < 0 or int(self.sub_point_entry[i][1].get()) < 0 or int(self.sub_point_entry[i][0].get()) > self.picture_window_size[0] or int(self.sub_point_entry[i][1].get()) > self.picture_window_size[1]:
                 messagebox.showerror(title="エラー",message="数値が画像の範囲外です")
                 return
         for i in range(len(self.point_entry_list)):
@@ -124,7 +124,7 @@ class change_point:
                 self.point_entry_list[i][j].delete(0,len(self.point_entry_list[i][j].get()))
                 self.point_entry_list[i][j].insert(0,self.sub_point_entry[i][j].get())
                 self.point_entry_list[i][j]["state"] = "readonly"
-            self.master.moveto(f"{i + 1}_mark",int(self.point_entry_list[i][0].get()) * self.float_scale + self.point_offset[0] + 250 - 3,int(self.point_entry_list[i][1].get()) * self.float_scale + self.point_offset[0] + 100 - 3)
+            self.master.moveto(f"{i + 1}_mark",int(self.point_entry_list[i][0].get()) + 250 - 3,int(self.point_entry_list[i][1].get()) + 100 - 3)
             self.marker_line()
         self.sub_root.destroy()
         del self.sub_root
@@ -181,11 +181,6 @@ class main(change_point,take_camera):
         marker_draw.ellipse((0,0,6,6),fill=(255,190,0,255),outline=(255,255,255))
         self.move_old = None
         self.bef_move = ""
-        self.point_offset = [0,0]
-        self.scale = 1000 #1000倍で保存 
-        self.float_scale = self.scale / 1000
-        self.click_dat = {}
-        self.moving_image = False
     def affine(self,show_img : bool) -> Image:
         """
         変形処理をする
@@ -199,7 +194,7 @@ class main(change_point,take_camera):
         point_location = []
         for i in range(1,5):#1-4まで(それぞれの座標のリストを作る)
             tmp = self.master.coords(f"{i}_mark")
-            tmp[0] , tmp[1] = (tmp[0] - 250 - self.point_offset[0] ) * self.change_size_num_re * (1/self.float_scale), (tmp[1] - 100 - self.point_offset[1] ) * self.change_size_num_re * (1/self.float_scale) 
+            tmp[0] , tmp[1] = (tmp[0] - 250) * self.change_size_num_re , (tmp[1] - 100) * self.change_size_num_re
             point_location.append(tmp)
         quad_data = (
             point_location[0][0], point_location[0][1],   # 左上
@@ -242,26 +237,10 @@ class main(change_point,take_camera):
         これを使用し、前回のものをつかんだままなのかを判定する。
         """
         self.change_flag = True#これがTrueになっているときのみ新しく図形を探索する
-        self.click_dat["Point"] = {"x":event.x,"y":event.y}
-        self.moving_image = False
     def point_move(self,event : Event) -> None:#クリック＆移動検知
         """
         点の移動を行う関数
-        又は、どの点も操作しない場合画像自体を動かす
         """
-        def image_move() -> None:
-            #TODO 点の位置を動かさないなら画像を動かす
-            #現在のメイン画像の座標をgetする
-            self.moving_image = True
-            x , y = self.master.coords("main_img")
-            move_x, move_y = self.click_dat["Point"]["x"] - event.x , self.click_dat["Point"]["y"] - event.y
-            self.master.moveto("main_img",x - move_x,y - move_y)
-            self.point_offset[0] -= move_x
-            self.point_offset[1] -= move_y
-            self.click_dat["Point"] = {"x":event.x,"y":event.y}
-            mark_put_list = [[int(self.point_entry_list[i][0].get()),int(self.point_entry_list[i][1].get()), i + 1] for i in range(4)]
-            self.marker_format(mark_put_list)
-            self.marker_line()
         def move_main(i) -> bool:
             if not self.change_flag:#今回は前回のものを動かすなら
                 point_location = self.master.coords(self.bef_move)
@@ -275,36 +254,36 @@ class main(change_point,take_camera):
                 c_flag = True
             if abs(point_location[0] - event.x) <= self.move_space and abs(point_location[1] - event.y) <= self.move_space:#移動確定なら
                 self.move_old = i#ここで移動したものを保管しておく
-                x , y = event.x -self.point_offset[0] , event.y -self.point_offset[1]#移動するはずの値
+                x , y = event.x , event.y#移動するはずの値
                 #それぞれ画像をオーバーしているなら動かさない
-                if x < 250 - 3:
+                if event.x < 250 - 3:
                     x = 250 - 3
-                elif x > 250 + self.picture_window_size[0] - 3:
+                elif event.x > 250 + self.picture_window_size[0] - 3:
                     x = 250 + self.picture_window_size[0] - 3
-                if y < 100 - 3:
+                if event.y < 100 - 3:
                     y = 100 - 3
-                elif y > 100 + self.picture_window_size[1]- 3:
+                elif event.y > 100 + self.picture_window_size[1] - 3:
                     y = 100 + self.picture_window_size[1] - 3
                 #要は今回つかんでいるのは新しく判定されたものなのか前回と同じなのか
                 if c_flag:
                     self.bef_move = f"{i + 1}_mark"
-                    self.master.moveto(f"{i + 1}_mark",x + self.point_offset[0],y + self.point_offset[1])
+                    self.master.moveto(f"{i + 1}_mark",x,y)
                     self.point_entry_list[i][0]["state"] = "NORMAL"
                     self.point_entry_list[i][1]["state"] = "NORMAL"
                     self.point_entry_list[i][0].delete(0,len(self.point_entry_list[i][0].get()))
-                    self.point_entry_list[i][0].insert(0,int((x - 250 + 3) // self.float_scale))
+                    self.point_entry_list[i][0].insert(0,x - 250 + 3)
                     self.point_entry_list[i][1].delete(0,len(self.point_entry_list[i][0].get()))
-                    self.point_entry_list[i][1].insert(0,int((y - 100 + 3) // self.float_scale))
+                    self.point_entry_list[i][1].insert(0,y - 100 + 3)
                     self.point_entry_list[i][0]["state"] = "readonly"
                     self.point_entry_list[i][1]["state"] = "readonly"
                 else:
-                    self.master.moveto(self.bef_move,x + self.point_offset[0],y + self.point_offset[1])
+                    self.master.moveto(self.bef_move,x,y)
                     self.point_entry_list[int(self.bef_move[0]) - 1][0]["state"] = "NORMAL"
                     self.point_entry_list[int(self.bef_move[0]) - 1][1]["state"] = "NORMAL"
                     self.point_entry_list[int(self.bef_move[0]) - 1][0].delete(0,len(self.point_entry_list[int(self.bef_move[0]) - 1][0].get()))
-                    self.point_entry_list[int(self.bef_move[0]) - 1][0].insert(0,int((x - 250 + 3) // self.float_scale))
+                    self.point_entry_list[int(self.bef_move[0]) - 1][0].insert(0,x - 250 + 3)
                     self.point_entry_list[int(self.bef_move[0]) - 1][1].delete(0,len(self.point_entry_list[int(self.bef_move[0]) - 1][1].get()))
-                    self.point_entry_list[int(self.bef_move[0]) - 1][1].insert(0,int((y - 100 + 3) // self.float_scale))
+                    self.point_entry_list[int(self.bef_move[0]) - 1][1].insert(0,y - 100 + 3)
                     self.point_entry_list[int(self.bef_move[0]) - 1][0]["state"] = "readonly"
                     self.point_entry_list[int(self.bef_move[0]) - 1][1]["state"] = "readonly"
                 #線を再描写する
@@ -312,6 +291,7 @@ class main(change_point,take_camera):
                 #Trueが返ると今回の処理は終了
                 return True
             else : 
+                #TODO 点の位置を動かさないなら画像を動かす
                 return False
         try:
             self.move_space = 10
@@ -319,21 +299,12 @@ class main(change_point,take_camera):
             if event.x < 250 - 3 or event.x > 250 + self.picture_window_size[0] - 3 or event.y < 100 - 3 or event.y > 100 + self.picture_window_size[1] - 3:
                 move_main(self.move_old)
             #4本の点に対して
-            if not self.moving_image:
-                for i in range(4):
-                    flag = move_main(i)
-                    if flag: 
-                        self.change_flag = False
-                        return
-                    
-            image_move()
+            for i in range(4):
+                flag = move_main(i)
+                if flag: 
+                    self.change_flag = False
+                    return
         except:pass#まだ画像が読まれていない
-    def calc_save_size(self,point) -> None:
-        print(point)
-        self.save_size_x_entry.delete(0,len(self.save_size_x_entry.get()))
-        self.save_size_x_entry.insert(0,int(max(abs(point[0][0] - point[2][0]),abs(point[1][0] - point[3][0])) * (1/self.float_scale) * self.change_size_num_re))
-        self.save_size_y_entry.delete(0,len(self.save_size_y_entry.get()))
-        self.save_size_y_entry.insert(0,int(max(abs(point[0][1] - point[1][1]),abs(point[2][1] - point[3][1])) * (1/self.float_scale) * self.change_size_num_re))
     def marker_line(self) -> None:
         """
         4点を結ぶ線を表示する
@@ -345,13 +316,11 @@ class main(change_point,take_camera):
         for i in range(1,5):#1-4まで(それぞれの座標のリストを作る)
             location_list.append(self.master.coords(f"{i}_mark"))
         #線を引く
-        for  i in range(4):
-            nxt = i + 1 if i < 3 else 0
-            self.master.create_line(location_list[i][0],location_list[i][1],
-                                    location_list[nxt][0],location_list[nxt][1],tags="black_line")
-        
-        location_list = [[location_list[i][0] - self.point_offset[0],location_list[i][1] - self.point_offset[1]] for i in range(4)]
-
+        self.master.create_line(location_list[0][0],location_list[0][1],
+                                location_list[1][0],location_list[1][1],
+                                location_list[2][0],location_list[2][1],
+                                location_list[3][0],location_list[3][1],
+                                location_list[0][0],location_list[0][1],tags="black_line")
         #四角の外側をグレーにする
         self.line_out_img = Image.new(mode="RGBA",size=(self.picture_window_size[0],self.picture_window_size[1]),color=(0,0,0,0))
         self.line_out_draw = ImageDraw.Draw(self.line_out_img)
@@ -367,12 +336,8 @@ class main(change_point,take_camera):
                                 (0,0)),
                                 fill=(0,0,0,128))
         self.line_out_tk = ImageTk.PhotoImage(self.line_out_img)
-        self.master.create_image(250 + self.point_offset[0],100 + self.point_offset[1],image = self.line_out_tk,anchor = NW,tags = "black_line")
-        self.master.lower("point_img","background")
-
-        self.master.lower("black_line","point_img")
-
-        self.calc_save_size(location_list)
+        self.master.create_image(250,100,image = self.line_out_tk,anchor = NW,tags = "black_line")
+        self.master.lift("point_img")
     def marker_format(self,marker_pin : List[List[int]]) -> None:
         """
         4点を描写する
@@ -381,54 +346,22 @@ class main(change_point,take_camera):
         i = 0
         for location in marker_pin:
             #番号を付けておく。またこの点に接する線にも同じタグを付与する事で点と同時に線も削除し、再描写する
-            self.master.create_image((location[0]) * self.float_scale + self.point_offset[0] + 250,(location[1]) * self.float_scale + self.point_offset[1] + 100,image = self.marker,tags = (f"{location[2]}_mark","point_img"))
+            self.master.create_image(location[0],location[1],image = self.marker,tags = (f"{location[2]}_mark","point_img"))
             self.point_entry_list[i][0]["state"] = "NORMAL"
             self.point_entry_list[i][1]["state"] = "NORMAL"
             self.point_entry_list[i][0].delete(0,len(self.point_entry_list[i][0].get()))
-            self.point_entry_list[i][0].insert(0,str(location[0]))
+            self.point_entry_list[i][0].insert(0,str(location[0] - 250))
             self.point_entry_list[i][1].delete(0,len(self.point_entry_list[i][1].get()))
-            self.point_entry_list[i][1].insert(0,str(location[1]))
+            self.point_entry_list[i][1].insert(0,str(location[1] - 100))
             self.point_entry_list[i][0]["state"] = "readonly"
             self.point_entry_list[i][1]["state"] = "readonly"
             i += 1
-        self.master.lower("point_img","background")
-    def change_img(self) -> None:
-        #生成した画像をscale倍にする
-        self.draw_picture = self.window_picture.resize((int(self.window_picture.size[0] * self.float_scale),int(self.window_picture.size[1] * self.float_scale)))
-        try:
-            self.bef_change_scale = self.now_size / self.draw_picture.size[0]   # 前回のサイズ/現在のサイズをすることでどれだけ変わったかを保管
-        except:pass
-        self.now_size = self.draw_picture.size[0]                           # 現在のサイズを更新
-
-        #もし、point[0] < 0 or point[1] < 0 のとき、はみ出ている部分が必要ではないのでトリムする
-        point = [self.point_offset[0],self.point_offset[1]]
-        # if self.point_offset[0] < 0 or self.point_offset[1] < 0:
-        #     #self.draw_pictureをトリミングする
-        #     self.draw_picture = self.draw_picture.crop((0 - self.point_offset[0],0 - self.point_offset[1],self.draw_picture.size[0],self.draw_picture.size[1]))
-        #     point[0] = 0 if self.point_offset[0] < 0 else self.point_offset[0]
-        #     point[1] = 0 if self.point_offset[1] < 0 else self.point_offset[1]
-        # if self.draw_picture.size[0] > 500 or self.draw_picture.size[1] > 400: # 画像サイズが大きすぎるとき
-        #     #self.draw_pictureをトリミングする
-        #     self.draw_picture = self.draw_picture.crop((0,0,500,400))
-
-        #現在のサイズを保管して
-        self.picture_window_size = self.draw_picture.size
-        #tkinterの形式に変換
-        self.draw_picture = ImageTk.PhotoImage(self.draw_picture)
-        #画像を表示
-        self.master.create_image(point[0] + 250,point[1] + 100,image = self.draw_picture, anchor=NW, tags = "main_img")
-
-        self.master.lower("main_img","background")
-    def put_pic_marker(self,path : str,load_image : bool) -> None:
+        
+    def put_pic_marker(self,path : str,load_image : bool, point : tuple[int,int], scale : float) -> None:
         """
         元画像のサイズの変更を行う
         ここでの変更は最終保存の画質には影響しない
         """
-        #画像サイズをリセット
-        self.scale = 1000
-        self.float_scale = 1
-        #offsetリセット
-        self.point_offset = [0,0]
         #まずはpictureを生成してセットする
         if not load_image:
             self.now_picture = Image.open(path)
@@ -461,12 +394,16 @@ class main(change_point,take_camera):
             self.change_size_num = 500 / self.picture_default_size[0]
             self.change_size_num_re = self.picture_default_size[0] / 500
             self.window_picture = self.now_picture.resize((int(500),int(500 * self.picture_default_size[1] / self.picture_default_size[0])))
-        self.change_img()
+        #生成した画像をscale倍にする
+        self.window_picture = self.window_picture.resize((int(self.window_picture.size[0] * scale),int(self.window_picture.size[1] * scale)))
+        self.picture_window_size = self.window_picture.size
+        self.window_picture = ImageTk.PhotoImage(self.window_picture)
+        self.master.create_image(point[0] + 250,point[1] + 100,image = self.window_picture, anchor=NW)
         #ここからマーカーを((0,0),(0,y_max),(x_max,0),(x_max,y_max))に配置する
-        mark_put_list = [[0 , 0 , 1],
-                        [0 , 0 + self.picture_window_size[1] , 2],
-                        [0 + self.picture_window_size[0] , 0 + self.picture_window_size[1] , 3],
-                        [0 + self.picture_window_size[0] , 0 , 4]]
+        mark_put_list = [[250 , 100 , 1],
+                        [250 , 100 + self.picture_window_size[1] , 2],
+                        [250 + self.picture_window_size[0] , 100 + self.picture_window_size[1] , 3],
+                        [250 + self.picture_window_size[0] , 100 , 4]]
         #点描写関数
         self.marker_format(mark_put_list)
         #線描写関数
@@ -476,6 +413,10 @@ class main(change_point,take_camera):
         """
         グリッド画像と左のロゴを生成
         """
+        #背景を作る
+        self.back_image = Image.new("RGBA",(900,700),(64,64,64,255))
+        self.back_image_tk = ImageTk.PhotoImage(self.back_image)
+        self.master.create_image(0,0,image = self.back_image_tk , anchor = NW)
         transparent_bg = Image.new(mode="RGB",size=(500,400),color=(0,0,0,255))
         #ここからピクセルの可視化用の画像を作る
         self.pixel_img = Image.new("RGBA",(520 + 10 + 10,int(500 * (4 / 5) + 20 + 10)),(0,0,0,0))
@@ -505,15 +446,6 @@ class main(change_point,take_camera):
         #どうやらローカル変数だと参照が消えてGCされてる感じなのでself.
         self.transparent_bg_tk = ImageTk.PhotoImage(transparent_bg)
         self.master.create_image(250,100,image = self.transparent_bg_tk,anchor = NW)
-
-        #背景を作る
-        self.back_image = Image.new("RGBA",(900,700),(64,64,64,255))
-        #ピクセルの可視化用画像を置く部分(x = 250 ~ 750, y = 100 ~ 500)を透明にする
-        transparent_bg = Image.new(mode="RGBA",size=(500,400),color=(0,0,0,0))
-        self.back_image.paste(transparent_bg,(250,100))
-        self.back_image_tk = ImageTk.PhotoImage(self.back_image)
-        self.master.create_image(0,0,image = self.back_image_tk , anchor = NW, tag = "background")
-
         #ロゴ読み込み
         self.logo = PhotoImage(file = "./assets/picture/logo_gradation.png")
         self.master.create_image(-50,0,image = self.logo,anchor = NW)
@@ -544,7 +476,7 @@ class main(change_point,take_camera):
                 self.image_path_entry.delete(0,len(self.image_path_entry.get()))
                 self.image_path_entry.insert(0,path)
                 self.image_path_entry["state"] = "disabled"
-                self.put_pic_marker(path,False)
+                self.put_pic_marker(path,False,(0,0),1.0)
         self.marker = make_marker()
         self.master.create_text(250,30 + 4,text="参照path",fill="white",tags="reference_path",anchor=N)
         self.image_path_entry = ttk.Entry(width=80, state='disabled')
@@ -580,23 +512,11 @@ class main(change_point,take_camera):
         self.app_camera_button = ttk.Button(text="写真を撮る",command = self.camera_win)
         self.app_camera_button.place(x = 800,y = 90)
     def control_click(self,event):
-        bef = [self.scale, self.float_scale]
         if event.delta > 0:
-            self.scale += 50 if self.scale < 3000 else 0
+            move = + 1
         else:
-            self.scale -= 50 if self.scale > 50 else 0
-        self.float_scale = self.scale / 1000
-        #再描写
-        try:
-            self.change_img()
-            #点描写関数
-            mark_put_list = [[int(self.point_entry_list[i][0].get()),int(self.point_entry_list[i][1].get()), i + 1] for i in range(4)]
-            self.marker_format(mark_put_list)
-            #線描写関数
-            self.marker_line()
-        except Exception as e:# まだ画像が読み込まれてないなら
-            print(e)
-            [self.scale, self.float_scale] = bef
+            move = - 1
+        
     def bind(self) -> None:
         """
         ドラッグ操作とクリックをバインド
@@ -615,7 +535,7 @@ class main(change_point,take_camera):
         """
         self.root = Tk()
         self.root.geometry("900x600")
-        self.root.title("image deformation")
+        self.root.title("image deformationer")
         self.root.resizable(0,0)
         self.root.iconbitmap("./assets/icon/Group.ico")
         self.master = Canvas(self.root,width=900,height=600)
